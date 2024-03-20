@@ -106,6 +106,12 @@ class BatchHandler:
             # curr_batch now contains the batch being serviced
             return current_time - curr_batch['start_service_time']
 
+    def get_latest_batch_service_times(self, num_batches_to_consider):
+        if len(self.batches) < num_batches_to_consider:
+            return -1
 
-
-
+        batches_to_consider = self.batches[len(self.batches) - num_batches_to_consider:]
+        batch_service_times = []
+        for batch in batches_to_consider:
+            batch_service_times.append(batch['total_service_time'])
+        return batch_service_times
