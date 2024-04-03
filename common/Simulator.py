@@ -75,7 +75,7 @@ class Simulator:
                         Q = sum(queue_service_times) - service_already_done
 
                     # Find a
-                    ia_inputs = [] #[Sim_math_ops.get_inter_arrival_times(arrival_times[j - num_ia_per_input:j + 1])]
+                    ia_inputs = [Sim_math_ops.get_inter_arrival_times(arrival_times[j - k:j + 1])]
                     a = ia_predictor.predict(ia_inputs)[0]
                     #print("a: " + str(a))
 
@@ -142,6 +142,5 @@ avg_E, ME = Simulator.simulate(
     st_predictor=st_pred,
     req_size_predictor=req_size_predictor
 )
-
 
 print("avg_E: " + str(avg_E) + ", ME: " + str(ME))
