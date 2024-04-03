@@ -1,13 +1,8 @@
 from common.BatchHandler import *
-from common.Sim_math_ops import *
+from common.Sim_math_ops import Sim_math_ops
 from common.Request import Request
 import statistics
-from common.ArrivalTimesCreator import *
-from common.RequestSizeCreator import *
-from common.BatchServiceTimesCreator import *
-from ml_models.test_st_constant_predictor import test_st_constant_predictor
-from ml_models.test_req_size_constant_predictor import test_req_size_constant_predictor
-from ml_models.test_ia_constant_predictor import test_ia_constant_predictor
+
 
 class Simulator:
     @staticmethod
@@ -54,7 +49,7 @@ class Simulator:
                     # Find Q
                     Q = 0
                     current_time = requests[j].get_arrival_time()
-                    if j>=1 and batch_handler.batches[-1].get_system_exit_time() > current_time:
+                    if batch_handler.batches[-1].get_system_exit_time() > current_time:
                         batch_being_serviced_rev_idx = -1
                         is_batch_currently_being_serviced_reached = False
                         while not is_batch_currently_being_serviced_reached:
@@ -126,6 +121,13 @@ class Simulator:
 
 
 # sample run
+from common.ArrivalTimesCreator import *
+from common.RequestSizeCreator import *
+from common.BatchServiceTimesCreator import *
+from ml_models.test_st_constant_predictor import test_st_constant_predictor
+from ml_models.test_req_size_constant_predictor import test_req_size_constant_predictor
+from ml_models.test_ia_constant_predictor import test_ia_constant_predictor
+
 arrival_times_creator = Exponential_inter_arrival_times(50)
 request_size_creator = Constant_request_sizes(100)
 network_delay_creator = Constant_st(0)

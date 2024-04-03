@@ -1,5 +1,7 @@
 from common.Simulator import Simulator
-from common.Distributions import *
+from common.ArrivalTimesCreator import *
+from common.RequestSizeCreator import *
+from common.BatchServiceTimesCreator import *
 import pandas as pd
 
 
@@ -42,8 +44,8 @@ class ExperimentPerformer:
             print("IA experiments")
             print("default network delay: " + str(default_mean_nt))
             print("default service time: " + str(default_mean_st))
-            network_delay_distribution = ServiceTimeExponentialBatchSizeIndependent(default_mean_nt)
-            service_times_distribution = ServiceTimeExponentialBatchSizeIndependent(default_mean_st)
+            network_delay_distribution = Exponential_st(default_mean_nt)
+            service_times_distribution = Exponential_st(default_mean_st)
             rows = []
             for mean_ia in mean_ias:
                 print("ia=" + str(mean_ia))
