@@ -1,4 +1,5 @@
 from ml_models.Model import Model
+from common.Sim_math_ops import Sim_math_ops
 from common.ArrivalTimesCreator import Exponential_inter_arrival_times
 from common.RequestSizeCreator import Exponential_request_sizes
 from sklearn import linear_model
@@ -17,7 +18,7 @@ class LinearModel(Model):
     def train_inter_arrival_predictor(self, k):
         # create data
         num_samples_per_mean_ia = 1000
-        num_ia_per_sample = 50
+        num_ia_per_sample = k
         mean_rates = [1, 5, 10, 15, 20]
         mean_ias = [1000/x for x in mean_rates]
 
@@ -27,7 +28,9 @@ class LinearModel(Model):
         for mean_ia in mean_ias:
             arrival_times_creator = Exponential_inter_arrival_times(mean_ia)
             for sample_idx in range(num_samples_per_mean_ia):
-                inputs.append(arrival_times_creator.create(num_ia_per_sample))
+                arrival_times = arrival_times_creator.create(num_ia_per_sample+1)
+                inter_arrival_times = Sim_math_ops.get_inter_arrival_times(arrival_times)
+                inputs.append(inter_arrival_times)
                 labels.append(mean_ia)
 
         # convert data to pandas dataframe
@@ -44,7 +47,7 @@ class LinearModel(Model):
     def train_request_size_predictor(self, k):
         # create data
         num_samples_per_mean_req_size = 1000
-        num_req_per_sample = 50
+        num_req_per_sample = k
         mean_req_sizes = [100, 1000, 10000, 100000]
 
         # create data

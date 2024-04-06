@@ -11,7 +11,7 @@ import pandas as pd
 verbose = True
 results_folder_path = "results"
 num_req_per_experiment = 10000
-num_repetitions = 30
+num_repetitions = 3
 perform_ia_experiments=True
 perform_nt_experiments=True
 perform_at_experiments=True
@@ -22,9 +22,9 @@ default_mean_ia = 1000/10
 default_mean_request_size = 5 #1000
 default_mean_nt = 0 #1000/15
 default_mean_at = 40
-default_transfer_rate = 80000
+default_transfer_rate = 8000000
 default_block_size = 4000
-default_k = 50
+default_k = 500
 default_arrival_times_creator = Exponential_inter_arrival_times(default_mean_ia)
 default_request_size_creator = Exponential_request_sizes(default_mean_request_size)
 default_network_delay_creator = Exponential_st(default_mean_nt)
@@ -81,7 +81,7 @@ if perform_ia_experiments:
                 network_delay_creator=default_network_delay_creator,
                 batch_service_time_creator=default_device_service_time_creator,
                 model=model,
-                k=50,
+                k=default_k,
                 num_requests=num_req_per_experiment,
                 num_experiments=num_repetitions
             )
