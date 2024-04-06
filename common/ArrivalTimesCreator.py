@@ -23,4 +23,17 @@ class Exponential_inter_arrival_times:
         return arrival_times
 
 
+class Multiple_sources_exponential_inter_arrival_times:
+    def __init__(self, mean_inter_arrival_times):
+        self.mean_inter_arrival_times = mean_inter_arrival_times
+
+    def create(self, num_requests):
+        arrival_times = []
+        for source_idx in range(len(self.mean_inter_arrival_times)):
+            creator = Exponential_inter_arrival_times(self.mean_inter_arrival_times[source_idx])
+            arrival_times.extend(creator.create(num_requests))
+        arrival_times.sort()
+        return arrival_times[:num_requests]
+
+
 

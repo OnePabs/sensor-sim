@@ -2,6 +2,7 @@ from common.BatchHandler import *
 from common.Sim_math_ops import Sim_math_ops
 from common.Request import Request
 import statistics
+import math
 
 
 class Simulator:
@@ -10,9 +11,7 @@ class Simulator:
                  request_size_creator,
                  network_delay_creator,
                  batch_service_time_creator,
-                 ia_predictor=None,
-                 st_predictor=None,
-                 req_size_predictor=None,
+                 model,
                  k=50,  # number of samples for prediction
                  num_requests=10000,
                  num_experiments=30):
@@ -30,21 +29,18 @@ class Simulator:
             for j in range(num_requests):
                 batch_handler.add_request_to_current_batch(requests[j])
 
-                if ia_predictor is None and st_predictor is None:
-                    # perform no Buffering
-                    send_buffer_contents_to_server = True
-                elif j >= k:
+                if j >= k:
                     # there is enough data to make a prediction on whether to buffer or not
 
                     # Find S_NB (service time for not buffering = S(sum(b(i) for i=1 to n))
                     current_batch_size = batch_handler.current_batch.get_size()
-                    S_NB = st_predictor.predict([current_batch_size])[0]
+                    S_NB = model.predict_batch_service_time(batch_size=current_batch_size)
 
                     # Find S_B (service time for buffering = S(sum(b(i) for i=1 to n+1))
-                    last_k_requests = request_sizes[j-k:j+1]
-                    estimated_size_of_nex_request = req_size_predictor.predict(last_k_requests)[0]
+                    k_latest_request_sizes = request_sizes[j-k:j+1]
+                    estimated_size_of_nex_request = model.predict_next_request_size(k_latest_request_sizes=k_latest_request_sizes)
                     estimated_buffering_batch_size = current_batch_size + estimated_size_of_nex_request
-                    S_B = st_predictor.predict([estimated_buffering_batch_size])[0]
+                    S_B = model.predict_batch_service_time(batch_size=estimated_buffering_batch_size)
 
                     # Find Q
                     Q = 0
@@ -65,13 +61,13 @@ class Simulator:
                         while batch_rev_idx >= batch_being_serviced_rev_idx:
                             sizes.append(batch_handler.batches[batch_rev_idx].get_size())
                             batch_rev_idx = batch_rev_idx - 1
-                        queue_service_times = st_predictor.predict(sizes)
+                        queue_service_times = model.predict_multiple_batches_service_times(batch_sizes=sizes)
                         service_already_done = current_time - batch_handler.batches[batch_being_serviced_rev_idx].get_start_service_time()
                         Q = sum(queue_service_times) - service_already_done
 
                     # Find a
-                    ia_inputs = [Sim_math_ops.get_inter_arrival_times(arrival_times[j - k:j + 1])]
-                    a = ia_predictor.predict(ia_inputs)[0]
+                    k_latest_inter_arrivals = [Sim_math_ops.get_inter_arrival_times(arrival_times[j - k:j + 1])]
+                    a = model.predict_next_inter_arrival(k_latest_inter_arrivals=k_latest_inter_arrivals)
                     #print("a: " + str(a))
 
                     # Find LHS (S_B - S_NB - min(Q,a))
@@ -101,7 +97,7 @@ class Simulator:
                 if send_buffer_contents_to_server:
                     batch_handler.send_current_batch_to_service(
                         network_delay=network_delay_creator.create_next(batch_handler.current_batch),
-                        processing_time=batch_service_time_creator.create_next(batch_handler.current_batch))
+                        processing_time=batch_service_time_creator.create_next(batch_handler.current_batch.get_size()))
 
             # calculate end-to-end time
             e = 0
@@ -120,29 +116,24 @@ class Simulator:
         return avg_E, ME
 
 
-# sample run
-from common.ArrivalTimesCreator import *
-from common.RequestSizeCreator import *
-from common.BatchServiceTimesCreator import *
-from ml_models.test_st_constant_predictor import test_st_constant_predictor
-from ml_models.test_req_size_constant_predictor import test_req_size_constant_predictor
-from ml_models.test_ia_constant_predictor import test_ia_constant_predictor
+if __name__ == '__main__':
+    # sample run
+    from common.ArrivalTimesCreator import *
+    from common.RequestSizeCreator import *
+    from common.BatchServiceTimesCreator import *
+    from ml_models.No_Buffering_Model import NoBufferingModel
 
-arrival_times_creator = Exponential_inter_arrival_times(50)
-request_size_creator = Constant_request_sizes(100)
-network_delay_creator = Constant_st(0)
-batch_service_time_creator = Exponential_st(40)
-st_pred = test_st_constant_predictor(40)
-req_size_predictor = test_req_size_constant_predictor(100)
-ia_predictor = test_ia_constant_predictor(50)
-avg_E, ME = Simulator.simulate(
-    arrival_times_creator=arrival_times_creator,
-    request_size_creator=request_size_creator,
-    network_delay_creator=network_delay_creator,
-    batch_service_time_creator=batch_service_time_creator,
-    ia_predictor=ia_predictor,
-    st_predictor=st_pred,
-    req_size_predictor=req_size_predictor
-)
+    arrival_times_creator_test = Exponential_inter_arrival_times(50)
+    request_size_creator_test = Constant_request_sizes(100)
+    network_delay_creator_test = Constant_st(0)
+    batch_service_time_creator_test = Exponential_st(40)
+    model_test = NoBufferingModel()
+    avg_E, ME = Simulator.simulate(
+        arrival_times_creator=arrival_times_creator_test,
+        request_size_creator=request_size_creator_test,
+        network_delay_creator=network_delay_creator_test,
+        batch_service_time_creator=batch_service_time_creator_test,
+        model=model_test
+    )
 
-print("avg_E: " + str(avg_E) + ", ME: " + str(ME))
+    print("avg_E: " + str(avg_E) + ", ME: " + str(ME))
