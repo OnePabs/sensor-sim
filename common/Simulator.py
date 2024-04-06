@@ -29,18 +29,21 @@ class Simulator:
             for j in range(num_requests):
                 batch_handler.add_request_to_current_batch(requests[j])
 
-                if j >= k:
+                if j > k:
                     # there is enough data to make a prediction on whether to buffer or not
 
                     # Find S_NB (service time for not buffering = S(sum(b(i) for i=1 to n))
                     current_batch_size = batch_handler.current_batch.get_size()
                     S_NB = model.predict_batch_service_time(batch_size=current_batch_size)
+                    #print("S_NB: " + str(S_NB))
 
                     # Find S_B (service time for buffering = S(sum(b(i) for i=1 to n+1))
-                    k_latest_request_sizes = request_sizes[j-k:j+1]
-                    estimated_size_of_nex_request = model.predict_next_request_size(k_latest_request_sizes=k_latest_request_sizes)
-                    estimated_buffering_batch_size = current_batch_size + estimated_size_of_nex_request
+                    k_latest_request_sizes = request_sizes[j-k:j]
+                    estimated_size_of_next_request = model.predict_next_request_size(k_latest_request_sizes=k_latest_request_sizes)
+                    #print("estimated_size_of_next_request: " + str(estimated_size_of_next_request))
+                    estimated_buffering_batch_size = current_batch_size + estimated_size_of_next_request
                     S_B = model.predict_batch_service_time(batch_size=estimated_buffering_batch_size)
+                    #print("S_B: " + str(S_B))
 
                     # Find Q
                     Q = 0
@@ -59,14 +62,15 @@ class Simulator:
                         sizes = []
                         batch_rev_idx = -1
                         while batch_rev_idx >= batch_being_serviced_rev_idx:
-                            sizes.append(batch_handler.batches[batch_rev_idx].get_size())
+                            sizes.append([batch_handler.batches[batch_rev_idx].get_size()])
                             batch_rev_idx = batch_rev_idx - 1
                         queue_service_times = model.predict_multiple_batches_service_times(batch_sizes=sizes)
                         service_already_done = current_time - batch_handler.batches[batch_being_serviced_rev_idx].get_start_service_time()
                         Q = sum(queue_service_times) - service_already_done
+                    #print("Q: " + str(Q))
 
                     # Find a
-                    k_latest_inter_arrivals = [Sim_math_ops.get_inter_arrival_times(arrival_times[j - k:j + 1])]
+                    k_latest_inter_arrivals = Sim_math_ops.get_inter_arrival_times(arrival_times[j - k:j + 1])
                     a = model.predict_next_inter_arrival(k_latest_inter_arrivals=k_latest_inter_arrivals)
                     #print("a: " + str(a))
 
@@ -99,6 +103,12 @@ class Simulator:
                         network_delay=network_delay_creator.create_next(batch_handler.current_batch),
                         processing_time=batch_service_time_creator.create_next(batch_handler.current_batch.get_size()))
 
+            # send last batch if needed
+            if batch_handler.current_batch.get_size() > 0:
+                batch_handler.send_current_batch_to_service(
+                    network_delay=network_delay_creator.create_next(batch_handler.current_batch),
+                    processing_time=batch_service_time_creator.create_next(batch_handler.current_batch.get_size()))
+
             # calculate end-to-end time
             e = 0
             for req in requests:
@@ -113,6 +123,8 @@ class Simulator:
         E_std = statistics.stdev(Es, xbar=avg_E)
         ME = z_or_t_score * (E_std / math.sqrt(num_experiments))
 
+        #print(requests[49:])
+
         return avg_E, ME
 
 
@@ -121,7 +133,7 @@ if __name__ == '__main__':
     from common.ArrivalTimesCreator import *
     from common.RequestSizeCreator import *
     from common.BatchServiceTimesCreator import *
-    from ml_models.No_Buffering_Model import NoBufferingModel
+    from ml_models.NoBufferingModel import NoBufferingModel
 
     arrival_times_creator_test = Exponential_inter_arrival_times(50)
     request_size_creator_test = Constant_request_sizes(100)

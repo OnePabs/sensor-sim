@@ -2,12 +2,13 @@ from common.Simulator import Simulator
 from common.ArrivalTimesCreator import *
 from common.RequestSizeCreator import *
 from common.BatchServiceTimesCreator import *
-from ml_models.No_Buffering_Model import NoBufferingModel
+from ml_models.NoBufferingModel import NoBufferingModel
+from ml_models.LinearModel import LinearModel
 import pandas as pd
 
 
 # Experiment Variables
-verbose = False
+verbose = True
 results_folder_path = "results"
 num_req_per_experiment = 10000
 num_repetitions = 30
@@ -18,20 +19,21 @@ perform_tr_experiments=True
 perform_bs_experiments=True
 perform_num_sources_experiments=True
 default_mean_ia = 1000/10
-default_mean_request_size = 1000
+default_mean_request_size = 5 #1000
 default_mean_nt = 0 #1000/15
-default_mean_at = 10
+default_mean_at = 40
 default_transfer_rate = 80000
 default_block_size = 4000
 default_k = 50
 default_arrival_times_creator = Exponential_inter_arrival_times(default_mean_ia)
 default_request_size_creator = Exponential_request_sizes(default_mean_request_size)
 default_network_delay_creator = Exponential_st(default_mean_nt)
-default_device_service_time_creator = Exponential_st(40) #Storage_with_access_time_and_blocks_st(access_time=default_mean_at,
-                                                                             #transfer_rate=default_transfer_rate,
-                                                                             #block_size=default_block_size)
+default_device_service_time_creator = Storage_with_access_time_and_blocks_st(access_time=default_mean_at,
+                                                                             transfer_rate=default_transfer_rate,
+                                                                             block_size=default_block_size)
 no_buffering_model = NoBufferingModel()
-models = [no_buffering_model]
+linear_model = LinearModel()
+models = [linear_model] #[no_buffering_model, linear_model]
 
 # train models to default values
 for model in models:
@@ -50,7 +52,7 @@ print("default Block Size (bytes): " + str(default_mean_at))
 #######################
 #### IA experiments ###
 #######################
-arrival_rates = [10, 20] #[1, 5, 10, 15, 20]
+arrival_rates = [20] #[1, 5, 10, 15, 20]
 mean_ias = [1000/x for x in arrival_rates]
 if perform_ia_experiments:
     print("IA experiments")
@@ -223,8 +225,4 @@ if perform_ia_experiments:
         #     results_file = self.results_folder_path + "/sources" + str(num_sources) + '.txt'
         #     rows = pd.DataFrame(rows)
         #     rows.to_csv(results_file, header=False, index=False)
-        #
-        #
-        #
-        #
 

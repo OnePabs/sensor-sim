@@ -1,3 +1,4 @@
+import numpy as np
 class Model:
     def __init__(self):
         self.display_name = "Model"
@@ -25,16 +26,16 @@ class Model:
         return
 
     def predict_next_inter_arrival(self, k_latest_inter_arrivals):
-        return self.ia_predictor.predict([k_latest_inter_arrivals])[0]
+        return self.ia_predictor.predict([k_latest_inter_arrivals])[0][0]
 
     def predict_next_request_size(self, k_latest_request_sizes):
-        return self.req_size_predictor.predict([k_latest_request_sizes])[0]
+        return self.req_size_predictor.predict([k_latest_request_sizes])[0][0]
 
     def predict_batch_service_time(self, batch_size):
-        return self.st_predictor.predict([batch_size])[0]
+        return self.st_predictor.predict([[batch_size]])[0]
 
     def predict_multiple_batches_service_times(self, batch_sizes):
-        return self.st_predictor.predict([batch_sizes])
+        return self.st_predictor.predict(batch_sizes)
 
 
 
